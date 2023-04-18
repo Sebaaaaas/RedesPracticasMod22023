@@ -8,7 +8,6 @@
 
 int main(int arg, char **argv){
 
-
     struct addrinfo hints;
     struct addrinfo *result;
     memset(&hints, 0, sizeof(struct addrinfo));
@@ -46,23 +45,23 @@ int main(int arg, char **argv){
         ssize_t bytes = recvfrom(sd, buffer, 1499, 0, (struct sockaddr *) &cliente, &cliente_len);
         buffer[bytes] = '\0';
         getnameinfo((struct sockaddr *) &cliente, cliente_len, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST|NI_NUMERICSERV);
-
+        
         std::cout << bytes << " bytes de " << host << ":" << serv << "\n";
-
-        sendto(sd, buffer, bytes, 0, (struct sockaddr *) &cliente, cliente_len);
-
+        
+        // sendto(sd, buffer, bytes, 0, (struct sockaddr *) &cliente, cliente_len);
+        
         //calculamos la hora en funcion del mensaje mandado(t, d, q)
 
         char tiempo[13];
         time_t t;
         time(&t);
         tm* lt = localtime(&t);
-
+        
         switch(buffer[0]){
             case 't':
                 {
                     strftime(tiempo,sizeof(tiempo),"%r", lt);
-                    sendto(sd, tiempo, sizeof(tiempo), 0, (struct sockaddr*) &cliente, cliente_len); 
+                    sendto(sd, tiempo, strlen(tiempo), 0, (struct sockaddr*) &cliente, cliente_len); 
                     break;
                 }
             case 'd':
