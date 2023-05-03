@@ -7,6 +7,28 @@ Socket::Socket(const char * address, const char * port):sd(-1)
 {
     //Construir un socket de tipo AF_INET y SOCK_DGRAM usando getaddrinfo.
     //Con el resultado inicializar los miembros sd, sa y sa_len de la clase
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_flags = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    struct addrinfo *result;
+
+    int rc = getaddrinfo(address, port, &hints, &result);
+    if(rc != 0){
+        std::cerr << "Error getaddrinfo " << gai_strerror(rc) << '\n';
+    }
+
+    int sd = socket(result->ai_family, result->ai_socktype, 0);
+    if(sd != -1){
+        std::cerr << "Error sockinfo " << gai_strerror(sd) << '\n';
+    }
+
+    sa = *result->ai_addr;
+    sa_len = result->ai_addrlen;
+
+    freeaddrinfo(result);
+
 }
 
 int Socket::recv(Serializable &obj, Socket * &sock)
@@ -36,7 +58,14 @@ int Socket::recv(Serializable &obj, Socket * &sock)
 int Socket::send(Serializable& obj, const Socket& sock)
 {
     //Serializar el objeto
+    obj.to_bin();
     //Enviar el objeto binario a sock usando el socket sd
+    int send = sendto(sock.sd, obj.data(), obj.size(), 0, &sock.sa, sock.sa_len);
+
+    if(send == -1)
+    {
+        std::cerr << "Error sendto " << gai_strerror(sd) << '\n';        
+    }
 }
 
 bool operator== (const Socket &s1, const Socket &s2)
@@ -49,8 +78,8 @@ bool operator== (const Socket &s1, const Socket &s2)
 
     if (s1.sa.sa_family == AF_INET && s2.sa.sa_family == AF_INET)
     {
-        sockaddr_in *sin1 = reinterpret_cast<sockaddr_in*>(s1.sa);
-        sockaddr_in *sin2 = reinterpret_cast<sockaddr_in*>(s2.sa);
+        struct sockaddr_in *sin1 = (struct sockaddr_in *) &(s1.sa);
+        struct sockaddr_in *sin2 = (struct sockaddr_in *) &(s2.sa);
 
 
         if(sin1->sin_addr.s_addr == sin2->sin_addr.s_addr && sin1->sin_port == sin2->sin_port)
