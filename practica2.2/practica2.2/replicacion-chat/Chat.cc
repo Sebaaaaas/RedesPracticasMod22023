@@ -48,6 +48,37 @@ void ChatServer::do_messages()
         // - LOGIN: Añadir al vector clients
         // - LOGOUT: Eliminar del vector clients
         // - MESSAGE: Reenviar el mensaje a todos los clientes (menos el emisor)
+        ChatMessage msg;
+        Socket *sock = new Socket(socket);
+        socket.recv(msg, sock);
+
+        switch(msg.type){
+            case ChatMessage::LOGIN:
+
+                clients.push_back(std::move(std::unique_ptr<Socket>(sock)));
+
+            break;
+            case ChatMessage::LOGOUT:
+                
+                for(auto it = clients.begin(); it != clients.end() && !(**it == *sock); ++it){
+                    if(it == clients.end()){
+                        std::cout <<  "Cliente no conectado" << '\n';
+                    }
+                    else{
+                        clients.erase(it);
+                    }
+                }
+
+            break;
+            case ChatMessage::MESSAGE:
+
+                for(auto it = clients.begin(); it != clients.end(); ++it){
+                    if(!(**it == *sock))
+                        socket.send(msg, **it);
+                }
+
+            break;
+        }
     }
 }
 
