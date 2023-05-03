@@ -10,6 +10,14 @@ void ChatMessage::to_bin()
     memset(_data, 0, MESSAGE_SIZE);
 
     //Serializar los campos type, nick y message en el buffer _data
+    char* tmp = _data;
+    memcpy(tmp, &type, sizeof(uint8_t));
+    tmp+= sizeof(uint8_t);
+
+    memcpy(tmp, nick.c_str(), sizeof(char) * 20);
+    tmp+= sizeof(char) * 20;
+
+    memcpy(tmp, message.c_str(), sizeof(char) * 100);
 }
 
 int ChatMessage::from_bin(char * bobj)
