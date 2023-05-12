@@ -11,31 +11,26 @@ Socket::Socket(const char* address, const char* port) :sd(-1)
     struct addrinfo* result;
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
-    hints.ai_flags = AI_PASSIVE;
     hints.ai_socktype = SOCK_DGRAM;
-
-
 
     int rc = getaddrinfo(address, port, &hints, &result);
     if (rc != 0) {
         std::cerr << "Error getaddrinfo 1 " << gai_strerror(rc) << '\n';
     }
 
-    sd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    sd = socket(result->ai_family, result->ai_socktype, 0);
     if (sd == -1) {
-        std::cerr << "Error sockinfo 2" << sd << gai_strerror(sd) << '\n';
+        std::cerr << "Error sockinfo 2 " << sd << gai_strerror(sd) << '\n';
     }
 
     sa = *result->ai_addr;
     sa_len = result->ai_addrlen;
-    std::cout << "HOLA";
 
     freeaddrinfo(result);
 
-
 }
 
-int Socket::recv(Serializable& obj, Socket*& sock)
+int Socket::recv(Serializable &obj, Socket * &sock)
 {
     struct sockaddr sa;
     socklen_t sa_len = sizeof(struct sockaddr);
@@ -44,12 +39,12 @@ int Socket::recv(Serializable& obj, Socket*& sock)
 
     ssize_t bytes = ::recvfrom(sd, buffer, MAX_MESSAGE_SIZE, 0, &sa, &sa_len);
 
-    if (bytes <= 0)
+    if ( bytes <= 0 )
     {
         return -1;
     }
 
-    if (sock != 0)
+    if ( sock != 0 )
     {
         sock = new Socket(&sa, sa_len);
     }
@@ -64,33 +59,31 @@ int Socket::send(Serializable& obj, const Socket& sock)
     //Serializar el objeto
     obj.to_bin();
     //Enviar el objeto binario a sock usando el socket sd
-    int send = sendto(sock.sd, obj.data(), obj.size(), 0, &sock.sa, sock.sa_len);
+    int send = sendto(sd, obj.data(), obj.size(), 0, &sock.sa, sock.sa_len);
 
-    if (send == -1)
+    if(send == -1)
     {
-        std::cerr << "Error sendto " << gai_strerror(sd) << '\n';
-        return -1;
+        std::cerr << "Error sendto " << gai_strerror(send) << '\n' <<  strerror(errno) << '\n';        
     }
 
     return 0;
-
 }
 
-bool operator== (const Socket& s1, const Socket& s2)
+bool operator== (const Socket &s1, const Socket &s2)
 {
     //Comparar los campos sin_family, sin_addr.s_addr y sin_port
     //de la estructura sockaddr_in de los Sockets s1 y s2
     //Retornar false si alguno difiere
-    if (s1.sa.sa_family != s2.sa.sa_family)
+    if(s1.sa.sa_family != s2.sa.sa_family)
         return false;
 
     if (s1.sa.sa_family == AF_INET && s2.sa.sa_family == AF_INET)
     {
-        struct sockaddr_in* sin1 = (struct sockaddr_in*)&s1.sa;
-        struct sockaddr_in* sin2 = (struct sockaddr_in*)&s2.sa;
+        struct sockaddr_in *sin1 = (struct sockaddr_in *) &(s1.sa);
+        struct sockaddr_in *sin2 = (struct sockaddr_in *) &(s2.sa);
 
 
-        if (sin1->sin_addr.s_addr == sin2->sin_addr.s_addr && sin1->sin_port == sin2->sin_port)
+        if(sin1->sin_addr.s_addr == sin2->sin_addr.s_addr && sin1->sin_port == sin2->sin_port)
             return true;
     }
 
@@ -103,8 +96,8 @@ std::ostream& operator<<(std::ostream& os, const Socket& s)
     char host[NI_MAXHOST];
     char serv[NI_MAXSERV];
 
-    getnameinfo((struct sockaddr*)&(s.sa), s.sa_len, host, NI_MAXHOST, serv,
-        NI_MAXSERV, NI_NUMERICHOST);
+    getnameinfo((struct sockaddr *) &(s.sa), s.sa_len, host, NI_MAXHOST, serv,
+                NI_MAXSERV, NI_NUMERICHOST);
 
     os << host << ":" << serv;
 
